@@ -1,0 +1,13 @@
+# Python venv
+.venv/
+.venv*/
+venv/
+venv*/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# OS/IDE
+.DS_Store
+.vscode/
