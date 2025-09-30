@@ -1,6 +1,6 @@
 # dfn_full_pipeline.py
 # 사용법(예):
-#   python dfn_full_pipeline.py --in "C:/audio/voice.m4a" --outdir "C:/audio/out" --alpha 0.7 --atten-lim -12 --sr 16000
+#   python dfn_full_pipeline.py --in "C:/audio/voice.m4a" --outdir "C:/audio/out" --alpha 0.5 --atten-lim -15 --sr 48000
 #
 # 동작:
 #   1) (필요시) m4a -> wav 변환 (모노, 지정 SR)
@@ -8,7 +8,7 @@
 #   3) 원본 wav와 DFN 결과를 alpha 비율로 블렌딩 -> <stem>_blend.wav 저장
 #
 # 메모:
-#   - DFN의 -o/--output-dir는 "폴더"입니다(파일명 아님). 결과는 <stem>_df.wav 형식으로 저장됩니다.
+#   - DFN의 -o/--output-dir는 "폴더"입니다(파일명 아님). 결과는 <stem>_blend.wav, <stem>_DeepFilterNet3.wav 형식으로 저장됩니다.
 #   - ffmpeg와 deepFilter가 PATH에 있어야 합니다. (터미널에서 `ffmpeg -version`, `deepFilter --help`로 확인)
 
 import argparse
@@ -55,11 +55,11 @@ def deepfilter(wav_in: Path, out_dir: Path, atten_lim: float = -12) -> Path:
     cmd = ["deepFilter", str(wav_in), "-o", str(out_dir), "--atten-lim", str(int(atten_lim))]
     run(cmd)
     # 기본 출력 파일명 규칙: <stem>_df.wav
-    expect = out_dir / f"{wav_in.stem}_df.wav"
+    expect = out_dir / f"{wav_in.stem}_DeepFilterNet3.wav"
     if expect.exists():
         return expect
     # 혹시 규칙이 다른 경우를 대비해 유사 파일 탐색
-    cands = sorted(out_dir.glob(f"{wav_in.stem}*_DeepFilterNet3.wav"))
+    cands = sorted(out_dir.glob(f"{wav_in.stem}*_df.wav"))
     if cands:
         return cands[0]
     raise FileNotFoundError(f"DFN 출력 파일을 찾지 못했습니다: {expect}")
