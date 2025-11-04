@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from dotenv import load_dotenv
 import requests
+import json
 import os
 
 load_dotenv()
@@ -19,12 +20,36 @@ class CompletionExecutor:
             'Accept': 'text/event-stream'
         }
 
+        collected_text = ""
+
         with requests.post(self._host + '/v1/chat-completions/HCX-003',
                            headers=headers, json=completion_request, stream=True) as r:
             for line in r.iter_lines():
-                if line:
-                    print(line.decode("utf-8"))
+                if not line:
+                    continue
 
+                decoded = line.decode("utf-8").strip()
+
+                # ✅ 스트리밍 종료
+                if decoded in ["data:[DONE]", "data: [DONE]"]:
+                    break
+
+                # ✅ event:result인 경우에만 처리
+                if decoded.startswith("event:result"):
+                    continue  # event 이름은 건너뜀
+
+                if decoded.startswith("data:"):
+                    try:
+                        data_json = json.loads(decoded.replace("data:", "").strip())
+
+                        # ✅ event:result 데이터만 잡기
+                        if data_json.get("message") and data_json["message"]["role"] == "assistant":
+                            # 최종 결과 저장
+                            result_content = data_json["message"].get("content", None)
+                    except json.JSONDecodeError:
+                        pass
+
+        return result_content
 
 if __name__ == '__main__':
     completion_executor = CompletionExecutor(
@@ -46,16 +71,28 @@ if __name__ == '__main__':
         
         [요청사항]
         - 데이터를 근거로 화자의 전반적인 인상과 전달력을 분석해 주세요.
-        - 단순히 수치를 나열하지 말고, 듣는 사람이 이해하기 쉬운 자연스러운 피드백 문장을 만들어 주세요.
+        - 단순히 수치를 절대 나열하지 말고, 듣는 사람이 이해하기 쉬운 자연스러운 피드백 문장을 만들어 주세요.
         - 부드럽고 긍정적인 어조로 말해 주세요.
         - 기술적 용어보다는 감각적 표현(예: 차분하다, 활기차다, 안정감 있다 등)을 사용하세요.
+        - 종합 피드백은 2~3문장 이내로 간결하게 작성해 주세요.
+        - 세부 피드백은 피치, 속도, 볼륨 각 항목별로 1문장씩 작성해 주세요.
+        - 답변을 json 형식으로 변환해서 답변합니다.
         
         [출력 형식]
-        1. 종합 피드백 (2~3문장)
-        2. 세부 피드백 (각각 1문장)
-            - 피치 관련:
-            - 속도 관련:
-            - 볼륨 관련:
+        [
+            {
+                "type": "종합 피드백",
+                "answer": "값1",
+            },
+            {
+                "type": "세부 피드백",
+                "answer": {
+                    "피치 관련": "값2",
+                    "속도 관련": "값3",
+                    "볼륨 관련": "값4"
+                }
+            }
+        ]
         """
     }]
 
@@ -80,5 +117,15 @@ if __name__ == '__main__':
         'includeAiFilters': True
     }
 
-    print(preset_text)
-    completion_executor.execute(request_data)
+    # print(preset_text)
+    # completion_executor.execute(request_data)
+    answer = completion_executor.execute(request_data)
+    # print(answer)
+
+    # 1️⃣ 문자열에 있는 이스케이프 제거 → 실제 JSON 객체로 변환
+    cleaned_answer = json.loads(answer)
+
+    # 2️⃣ 보기 좋게 출력
+    # print(json.dumps(cleaned, indent=2, ensure_ascii=False))
+    with open("LLM_result.json", "w", encoding="utf-8") as f:
+        json.dump(cleaned_answer, f, ensure_ascii=False, indent=2)
