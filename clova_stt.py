@@ -1,13 +1,15 @@
+from dotenv import load_dotenv
 import requests
 import json
 import os
 
+load_dotenv()
 
 class ClovaSpeechClient:
     # Clova Speech invoke URL
-    invoke_url = 'https://clovaspeech-gw.ncloud.com/external/v1/13048/74ba85fcfed356739115d8fa857b9f002170fdde1d27c66d780a0f2ba31e92c3'
+    invoke_url = os.getenv('Clova_Speech_Invoke_URL')
     # Clova Speech secret key
-    secret = 'ba182ffb9b0c4f9f8bc4e12d8a84b549'
+    secret = os.getenv('Clova_Speech_Secret_Key')
 
     def req_url(self, url, completion, callback=None, userdata=None,
     	forbiddens=None, boostings=None, wordAlignment=True,

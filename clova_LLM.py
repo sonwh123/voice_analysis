@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-
+from dotenv import load_dotenv
 import requests
+import os
 
+load_dotenv()
 
 class CompletionExecutor:
     def __init__(self, host, api_key, request_id):
@@ -27,7 +29,7 @@ class CompletionExecutor:
 if __name__ == '__main__':
     completion_executor = CompletionExecutor(
         host='https://clovastudio.stream.ntruss.com',
-        api_key='Bearer nv-61f8e49eb0b640d08336d4ee22cb1585Axms',
+        api_key=os.getenv('LLM_API_Key'),
         request_id='bfcca195ca18486da211c69e4cea101c'
     )
 
