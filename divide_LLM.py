@@ -22,7 +22,7 @@ class CompletionExecutor:
 
         collected_text = ""
 
-        with requests.post(self._host + '/v1/chat-completions/HCX-003',
+        with requests.post(self._host + '/v3/chat-completions/HCX-005',
                            headers=headers, json=completion_request, stream=True) as r:
             for line in r.iter_lines():
                 if not line:
@@ -55,54 +55,67 @@ if __name__ == '__main__':
     completion_executor = CompletionExecutor(
         host='https://clovastudio.stream.ntruss.com',
         api_key=os.getenv('LLM_API_Key'),
-        request_id='bfcca195ca18486da211c69e4cea101c'
+        request_id='7cb606aa44574fc0b35cc2c620f5e7d3'
     )
 
     preset_text = [{
         "role":"system",
         "content":"""
-        당신은 전문적인 한국어 스피치 코치입니다.발표나 면접 등 다양한 상황에서 화자의 발화 습관을 분석하고,
-        자연스럽고 따뜻한 어조로 개선 방향을 제안하는 것이 당신의 역할입니다.
+        당신은 전문적인 한국어 스피치 코치입니다.발표나 면접 등 다양한 상황에서 화자의 대본을 내용별로 문단을 나누는 것이 당신의 역할입니다.
         
-        앞으로 사용자의 발화 분석 결과를 줄 것입니다.
-        각 수치는 평균적인 발표자 기준 대비 상대적인 차이를 의미합니다.
-        출력 형식에 맞춰서 데이터를 주면 종합 피드백, 세부 피드백만 출력합니다.
-        피드백 이외의 다른 인사말이나 설명은 하지 마세요.
-        
+        앞으로 사용자의 대본을 줄 것입니다.
+        출력 형식에 맞춰서 데이터를 주면 내용별로 문단을 나눠서 출력합니다.
+                
         [요청사항]
-        - 데이터를 근거로 화자의 전반적인 인상과 전달력을 분석해 주세요.
-        - 단순히 수치를 절대 나열하지 말고, 듣는 사람이 이해하기 쉬운 자연스러운 피드백 문장을 만들어 주세요.
-        - 부드럽고 긍정적인 어조로 말해 주세요.
-        - 기술적 용어보다는 감각적 표현(예: 차분하다, 활기차다, 안정감 있다 등)을 사용하세요.
-        - 종합 피드백은 2~3문장 이내로 간결하게 작성해 주세요.
-        - 세부 피드백은 피치, 속도, 볼륨 각 항목별로 1문장씩 작성해 주세요.
+        - 대본의 순서나 내용을 바꾸지 말고 그대로 출력하세요.
         - 답변을 json 형식으로 변환해서 답변합니다.
-        
+        - section은 7개 미만으로 나눕니다.
+        - part의 내용은 서론, 본론, 결론으로만 나타냅니다.
+        - content는 반드시 대본의 순서대로 대본의 전체를 포함해야 합니다.
+        - 처음과 마지막이 인사거나 마무리 멘트이더라도 생략하지 말고 포함해야 합니다.
+        - JSON 외에 설명, 인사말, 코드블록 표시(````json`, ``` 등)은 절대 포함하지 마세요.
+                
         [출력 형식]
         [
             {
-                "type": "종합 피드백",
-                "answer": "값1",
-            },
-            {
-                "type": "세부 피드백",
-                "answer": {
-                    "피치 관련": "값2",
-                    "속도 관련": "값3",
-                    "볼륨 관련": "값4"
+            "title": "대본 주제",
+            "sections": [
+                {
+                "id": 1,
+                "part": "서론",
+                "content": "대본1"
+                },
+                {
+                "id": 2,
+                "part": "본론1",
+                "content": "대본2"
+                },
+                {
+                "id": 2,
+                "part": "본론2",
+                "content": "대본2"
+                },
+            ...
+                {
+                "id": 3,
+                "part": "결론",
+                "content": "대본3"
                 }
             }
         ]
         """
     }]
 
+    # 대본 가져오기
+    file_path = "sample.txt"  # 불러올 파일 경로
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        script = f.read() 
+
     user_message = [{
         "role": "user",
         "content": """
-        [발화 데이터]
-        - 평균 피치(Hz): 210 (+30)
-        - 말하기 속도(음절/초): 5.8 (+1.3)
-        - 평균 볼륨(dB): 68 (-6)
+        {script}
         """
     }]
 
@@ -110,7 +123,7 @@ if __name__ == '__main__':
         'messages': preset_text,
         'topP': 0.8,
         'topK': 0,
-        'maxTokens': 256,
+        'maxTokens': 1024,
         'temperature': 0.5,
         'repeatPenalty': 1.1,
         'stopBefore': [],
@@ -127,5 +140,5 @@ if __name__ == '__main__':
 
     # 2️⃣ 보기 좋게 출력
     # print(json.dumps(cleaned, indent=2, ensure_ascii=False))
-    with open("LLM_result.json", "w", encoding="utf-8") as f:
+    with open("LLM_divide_result.json", "w", encoding="utf-8") as f:
         json.dump(cleaned_answer, f, ensure_ascii=False, indent=2)
