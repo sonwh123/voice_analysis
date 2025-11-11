@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import requests
 import json
 import os
+import uuid
 
 load_dotenv()
 
@@ -55,10 +56,10 @@ if __name__ == '__main__':
     completion_executor = CompletionExecutor(
         host='https://clovastudio.stream.ntruss.com',
         api_key=os.getenv('LLM_API_Key'),
-        request_id='bfcca195ca18486da211c69e4cea101c'
+        request_id=str(uuid.uuid4())
     )
 
-    preset_text = [{
+    preset_text = {
         "role":"system",
         "content":"""
         당신은 전문적인 한국어 스피치 코치입니다.발표나 면접 등 다양한 상황에서 화자의 발화 습관을 분석하고,
@@ -94,9 +95,9 @@ if __name__ == '__main__':
             }
         ]
         """
-    }]
+    }
 
-    user_message = [{
+    user_message = {
         "role": "user",
         "content": """
         [발화 데이터]
@@ -104,10 +105,10 @@ if __name__ == '__main__':
         - 말하기 속도(음절/초): 5.8 (+1.3)
         - 평균 볼륨(dB): 68 (-6)
         """
-    }]
+    }
 
     request_data = {
-        'messages': preset_text,
+        'messages': [preset_text,user_message],
         'topP': 0.8,
         'topK': 0,
         'maxTokens': 256,
