@@ -1,18 +1,28 @@
 # app/utils/audio_analyzer.py
-import whisper
+# import whisper
+import json
 import librosa
 import numpy as np
 
 
 def analyze_segments(audio_path: str, model_name="turbo", language="ko"):
-    model = whisper.load_model(model_name)
-    result = model.transcribe(audio_path, language=language, word_timestamps=True)
+    # Whisper 모델 로드 및 음성 파일 로드
+    # model = whisper.load_model(model_name)
+    # result = model.transcribe(audio_path, language=language, word_timestamps=True)
     y, sr = librosa.load(audio_path, sr=16000)
 
+
+    # clova stt로 부터 json 결과 받기
+    with open("voice_STT.json", "r", encoding="utf-8") as f:
+        result = json.load(f)
+
+    result_text = ""
     analyzed = []
-    for seg in result["segments"]:
-        seg_start, seg_end = seg["start"], seg["end"]
+    id=0
+    for seg in result:
+        seg_start, seg_end = seg["start"]/1000, seg["end"]/1000
         seg_text = seg["text"].strip()
+        result_text += " " + seg_text
         metrics = {}
 
         start_samp, end_samp = int(seg_start*sr), int(seg_end*sr)
@@ -39,18 +49,19 @@ def analyze_segments(audio_path: str, model_name="turbo", language="ko"):
             metrics["prosody_score"] = round(metrics["pitch_mean_hz"] * (1 - metrics["pause_ratio"]), 2)
 
         segment_info ={
-            "id": seg["id"],
+            "id": id,
             "text": seg_text,
             "start": seg_start,
             "end": seg_end,
             "metrics": metrics,
             "words" : []
         }
+        id+=1
 
         if "words" in seg:
             for w in seg["words"]:
-                w_text = w["word"].strip()
-                w_start, w_end = w["start"], w["end"]
+                w_text = w[2].strip()
+                w_start, w_end = w[0]/1000, w[1]/1000
                 w_start_samp, w_end_samp = int(w_start*sr), int(w_end*sr)
                 y_word = y[w_start_samp:w_end_samp]
 
@@ -88,4 +99,4 @@ def analyze_segments(audio_path: str, model_name="turbo", language="ko"):
 
         analyzed.append(segment_info)
 
-    return {"text": result["text"], "segments": analyzed, "duration": float(len(y) / sr)}
+    return {"text": result_text, "segments": analyzed, "duration": float(len(y) / sr)}

@@ -126,7 +126,7 @@ if __name__ == '__main__':
         
         # 3. JSON 파일 저장
         base_name = os.path.splitext("./voice")[0]
-        json_output_file = base_name + '_segments_pure.json'
+        json_output_file = base_name + '_STT.json'
         
         # 순수 segments 배열만 파일에 저장
         with open(json_output_file, 'w', encoding='utf-8') as f:

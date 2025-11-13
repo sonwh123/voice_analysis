@@ -6,7 +6,7 @@ import os
 audio_path = "voice.m4a"
 
 # 분석 실행
-result = analyze_segments(audio_path, model_name="base", language="ko")
+result = analyze_segments(audio_path, model_name="turbo", language="ko")
 
 # # 결과 출력
 # print(json.dumps(result, indent=2, ensure_ascii=False))
