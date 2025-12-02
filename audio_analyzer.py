@@ -1,13 +1,16 @@
 # app/utils/audio_analyzer.py
+import os
 import json
 import librosa
 import numpy as np
-from analyzer_function import get_voiced_mask_from_words, compute_energy_stats_segment, compute_pitch_cv_segment
-
+from analyzer_function import get_voiced_mask_from_words, compute_energy_stats_segment, compute_pitch_cv_segment, compute_final_boundary_features_for_segment
 
 def analyze_segments(audio_path: str):
     # clova stt로 부터 json 결과 받기
-    with open("voice_STT.json", "r", encoding="utf-8") as f:
+    base_name = os.path.splitext(audio_path)[0]
+    json_output_file = base_name + '.json'
+
+    with open(json_output_file, "r", encoding="utf-8") as f:
         result = json.load(f)
 
     # 음성 파일 로드 및 RMS 계산
@@ -73,6 +76,15 @@ def analyze_segments(audio_path: str):
                 f0_min=1e-3
             )
             
+            # 문장 끝 경계 특징 계산
+            final_db_drop, final_db_slope, final_pitch_drop, final_pitch_slope = compute_final_boundary_features_for_segment(
+                rms=rms,
+                f0_hz=f0,
+                frame_times=frame_times,
+                seg_start=seg_start,
+                seg_end=seg_end
+            )
+
             # 말하기 속도 계산 (wpm)
             words_count = len(seg_text.split())
             duration_min = (seg_end - seg_start) / 60
@@ -98,6 +110,12 @@ def analyze_segments(audio_path: str):
                 "word_count": words_count,
                 "rate_wpm": round(rate_wpm, 1),
                 "duration_sec": round(seg_end - seg_start, 3)
+            },
+            "final_boundary": {
+                "final_db_drop": round(final_db_drop, 2),
+                "final_db_slope": round(final_db_slope, 4),
+                "final_pitch_drop_semitone": round(final_pitch_drop, 2),
+                "final_pitch_slope": round(final_pitch_slope, 4)
             },
             "words" : []
         }
