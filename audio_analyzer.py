@@ -102,8 +102,8 @@ def analyze_segments(audio_path: str):
                 "cv": round(cv_energy, 4)
             },
             "pitch": {
-                "mean_hz": round(mean_st, 2),
-                "std_hz": round(std_st, 2),
+                "mean_st": round(mean_st, 2),
+                "std_st": round(std_st, 2),
                 "cv": round(cv_pitch, 4)
             },
             "wpm":{

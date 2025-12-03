@@ -232,36 +232,25 @@ def classify_pitch_cv(cv_pitch: float):
     if not np.isfinite(cv_pitch):
         return "UNKNOWN", "유성 구간이 너무 짧거나 피치 측정이 불안정해서 음높이 변동을 평가하기 어렵습니다."
 
-    if cv_pitch < 0.15:
-        label = "VERY_LOW"
+    if cv_pitch < 0.18:
+        label = "LOW_VAR"
         comment = (
-            "음높이 변동이 매우 적은 편입니다. 전체적으로 단조롭게 들릴 수 있어, "
-            "강조가 필요한 부분에서 피치를 조금 더 올리거나 내려 주면 좋습니다."
+            "음높이 변동이 상당히 적은 편입니다. 전체적으로 단조롭게 들릴 수 있어서, "
+            "강조해야 하는 단어나 문장에서는 피치를 조금 더 올리거나 내려 주면 전달력이 좋아질 수 있습니다."
         )
-    elif cv_pitch < 0.23:
-        label = "LOW_NORMAL"
-        comment = (
-            "음높이 변동이 비교적 작은 편입니다. 차분하고 안정적인 인상을 주지만, "
-            "설명이나 발표에서는 핵심 키워드에서 피치를 조금 더 변화시키면 전달력이 좋아질 수 있습니다."
-        )
-    elif cv_pitch < 0.33:
-        label = "TYPICAL"
-        comment = (
-            "일반적인 말하기에서 자주 관찰되는 수준의 음높이 변동입니다. "
-            "억양이 자연스러워서 듣기에 무난한 편입니다."
-        )
-    elif cv_pitch < 0.45:
-        label = "HIGH"
-        comment = (
-            "음높이 변동이 비교적 큰 편입니다. 감정 표현이나 강조가 풍부하게 느껴질 수 있지만, "
-            "일부 구간에서는 다소 요동치는 느낌을 줄 수도 있습니다."
-        )
+    elif cv_pitch <= 0.40:
+        label = "NORMAL_VAR"
+        # comment = (
+        #     "음높이 변동이 자연스러운 범위 안에 있습니다. 발표나 설명에서 듣기 무난한 억양으로, "
+        #     "현재 수준에서는 특별히 교정이 필요하지 않을 정도의 안정적인 패턴입니다."
+        # )
+        comment = ""
     else:
-        label = "VERY_HIGH"
+        label = "HIGH_VAR"
         comment = (
-            "음높이 변동이 매우 큰 편입니다. 감정이 많이 실린 말하기이거나, "
-            "긴장을 많이 한 상태일 수 있습니다. 중요한 부분 위주로만 피치 변화를 크게 사용하면 "
-            "전체 흐름이 더 안정적으로 느껴질 수 있습니다."
+            "음높이 변동이 꽤 큰 편입니다. 감정 표현이나 에너지가 잘 드러난다는 장점이 있지만, "
+            "정보 전달이 중요한 발표에서는 다소 요동치는 느낌을 줄 수 있습니다. "
+            "핵심이 아닌 부분에서는 피치 변화를 조금 줄이고, 중요한 문장에만 억양을 집중시키면 더 안정적으로 들릴 수 있습니다."
         )
 
     return label, comment
@@ -271,36 +260,27 @@ def classify_energy_cv(cv_energy: float):
     if not np.isfinite(cv_energy):
         return "UNKNOWN", "유성 구간이 너무 짧거나 RMS 측정이 불안정해서 크기 변동을 평가하기 어렵습니다."
 
-    if cv_energy < 0.25:
-        label = "VERY_LOW"
+    if cv_energy < 0.30:
+        label = "LOW_VAR"
         comment = (
-            "음성 크기 변동이 매우 적습니다. 전체적으로 볼륨이 거의 일정해서 안정적으로 들리지만, "
-            "강조해야 할 단어나 문장에서 크기 변화를 조금 더 주면 전달력이 좋아질 수 있습니다."
+            "음성 크기 변동이 상당히 작은 편입니다. 전체적으로 안정적이지만, "
+            "강조해야 할 단어나 문장에서 볼륨 차이가 부족해 다소 단조롭게 들릴 수 있습니다. "
+            "핵심 키워드에서만 살짝 크기를 올려 주면 더 전달력이 좋아질 수 있습니다."
         )
-    elif cv_energy < 0.45:
-        label = "LOW_NORMAL"
-        comment = (
-            "음성 크기 변동이 비교적 작은 편입니다. 차분한 인상을 주지만, "
-            "핵심 부분에서 크기를 살짝 더 키우면 메시지가 더 뚜렷하게 전달될 수 있습니다."
-        )
-    elif cv_energy < 0.70:
-        label = "TYPICAL"
-        comment = (
-            "일반적인 말하기에서 흔히 보이는 수준의 크기 변동입니다. "
-            "문장과 단어에 따라 적당한 강약이 들어가 있어 자연스럽게 들립니다."
-        )
-    elif cv_energy < 1:
-        label = "HIGH"
-        comment = (
-            "음성 크기 변동이 꽤 큰 편입니다. 강조가 많아서 에너지가 느껴질 수 있지만, "
-            "일부 구간에서는 소리가 갑자기 커지거나 작아지는 느낌을 줄 수도 있습니다."
-        )
+    elif cv_energy <= 0.80:
+        label = "NORMAL_VAR"
+        # comment = (
+        #     "음성 크기 변동이 자연스러운 범위 안에 있습니다. 문장과 단어에 따라 적당한 강약이 들어가 있어 "
+        #     "듣기에 무난한 패턴이며, 현재 수준에서는 크기 변동 자체에 대한 교정이 꼭 필요하지는 않습니다."
+        # )
+        comment = ""
     else:
-        label = "VERY_HIGH"
+        label = "HIGH_VAR"
         comment = (
-            "음성 크기 변동이 매우 큽니다. 마이크 거리 변화, 몸 움직임, 혹은 볼륨 조절이 "
-            "불안정했을 수 있습니다. 중요한 부분을 제외하고는 크기 변화를 조금 줄이면 "
-            "청자가 더 편하게 들을 수 있습니다."
+            "음성 크기 변동이 꽤 큰 편입니다. 문장 안에서 볼륨이 많이 출렁여서, "
+            "마이크 거리 변화나 몸 움직임, 혹은 긴장으로 인한 볼륨 조절 문제일 가능성이 있습니다. "
+            "중요한 부분이 아닌 곳에서는 크기 변화를 조금 줄이고, 문장 전체를 보다 일정한 에너지로 유지하면 "
+            "청자가 더 편안하게 들을 수 있습니다."
         )
 
     return label, comment
@@ -318,10 +298,11 @@ def classify_rate_wpm(rate_wpm: float):
         )
     elif rate_wpm < 160:
         label = "TYPICAL"
-        comment = (
-            "발표에서 가장 흔하고 듣기 편한 정상 속도. 내용 이해·집중·전달력의 균형이 좋은 구간."
-            "대부분의 프레젠테이션이 이 범위에 들어감."
-        )
+        # comment = (
+        #     "발표에서 가장 흔하고 듣기 편한 정상 속도. 내용 이해·집중·전달력의 균형이 좋은 구간."
+        #     "대부분의 프레젠테이션이 이 범위에 들어감."
+        # )
+        comment = ""
     else:
         label = "FAST"
         comment = (
@@ -335,22 +316,24 @@ def classify_rate_wpm(rate_wpm: float):
 # ===== 5-1. labeling =====
 def labeling_volume_ending(db_drop: float,
                            db_slope: float):
+    # drop 라벨
     if not np.isfinite(db_drop):
-        drop_label = "UNKNOWN"
-    if db_drop < -4:
-        drop_label = "DP_STRONG_RISE"
-    elif db_drop < 4:
-        drop_label = "DP_WEAK_RISE_OR_FLAT"
+        drop_label = "DP_UNKNOWN"
+    elif db_drop <= -3:
+        drop_label = "DP_RISE"   
+    elif db_drop < 3:
+        drop_label = "DP_STABLE"       
     elif db_drop < 8:
-        drop_label = "DP_WEAK_FALL"
+        drop_label = "DP_SOFT_FALL"   
     else:
-        drop_label = "DP_STRONG_FALL"
+        drop_label = "DP_STRONG_FALL"   
 
+    # slope 라벨
     if not np.isfinite(db_slope):
-        slope_label = "UNKNOWN"
-    if db_slope < -1:
+        slope_label = "SLOPE_UNKNOWN"
+    elif db_slope <= -0.5:
         slope_label = "SLOPE_DECAY"
-    elif db_slope < 1:
+    elif db_slope < 0.5:
         slope_label = "SLOPE_FLAT"
     else:
         slope_label = "SLOPE_RISE"
@@ -359,25 +342,28 @@ def labeling_volume_ending(db_drop: float,
 
 def labeling_pitch_ending(pitch_drop: float,
                           pitch_slope: float):
+
+    # drop 라벨
     if not np.isfinite(pitch_drop):
-        drop_label = "UNKNOWN"
-    if pitch_drop < -3:
+        drop_label = "PITCH_DROP_UNKNOWN"
+    elif pitch_drop <= -2:
         drop_label = "PITCH_STRONG_RISE"
-    elif pitch_drop < 1:
+    elif pitch_drop < 1.5:
         drop_label = "PITCH_RISE_OR_FLAT"
-    elif pitch_drop < 3:
+    elif pitch_drop < 4:
         drop_label = "PITCH_NATURAL_FALL"
     else:
         drop_label = "PITCH_STRONG_FALL"
 
+    # slope 라벨
     if not np.isfinite(pitch_slope):
-        slope_label = "UNKNOWN"
-    if pitch_slope < -1:
-        slope_label = "SLOPE_DECAY"
-    elif pitch_slope < 1:
-        slope_label = "SLOPE_FLAT"
+        slope_label = "PITCH_SLOPE_UNKNOWN"
+    elif pitch_slope <= -0.5:
+        slope_label = "PITCH_SLOPE_FALL"
+    elif pitch_slope < 0.5:
+        slope_label = "PITCH_SLOPE_FLAT"
     else:
-        slope_label = "SLOPE_RISE"
+        slope_label = "PITCH_SLOPE_RISE"
 
     return drop_label, slope_label
 
@@ -394,38 +380,36 @@ def classify_volume_ending(final_db_drop: float,
     # 기본값
     final_label = "VOL_END_MIXED"
 
-    # 1) 안정적으로 끝까지 유지
-    if (db_drop_label == "DP_WEAK_RISE_OR_FLAT" and
-            db_slope_label == "SLOPE_FLAT"):
-        final_label = "VOL_END_STABLE_CLEAR"
-
-    # 2) 자연스럽게 살짝 줄어드는 마무리
-    elif ((db_drop_label == "DP_WEAK_FALL" and
-           db_slope_label in {"SLOPE_FLAT", "SLOPE_DECAY"})
-          or
-          (db_drop_label == "DP_WEAK_RISE_OR_FLAT" and
-           db_slope_label == "SLOPE_DECAY")):
-        final_label = "VOL_END_NATURAL_SOFT"
-
-    # 3) 강하게 사라지는 느낌의 마무리
-    elif (db_drop_label == "DP_STRONG_FALL" and
-          db_slope_label == "SLOPE_DECAY"):
+    # 1) 강한 페이드 아웃 (볼륨 확 줄어듦)
+    if (db_drop_label == "DP_STRONG_FALL"
+        and db_slope_label == "SLOPE_DECAY"):
         final_label = "VOL_END_STRONG_FADE"
 
+    # 2) 자연스럽게 부드럽게 줄어드는 마무리
+    elif ((db_drop_label in {"DP_SOFT_FALL", "DP_STABLE"}
+           and db_slope_label == "SLOPE_DECAY")
+          or (db_drop_label == "DP_SOFT_FALL"
+              and db_slope_label == "SLOPE_FLAT")):
+        final_label = "VOL_END_NATURAL_SOFT"
+
+    # 3) 끝까지 또렷하게 유지되는 마무리
+    elif (db_drop_label == "DP_STABLE"
+          and db_slope_label == "SLOPE_FLAT"):
+        final_label = "VOL_END_STABLE_CLEAR"
+
     # 4) 끝으로 갈수록 볼륨이 올라가는 패턴
-    elif (db_drop_label == "DP_STRONG_RISE" or
-          db_slope_label == "SLOPE_RISE"):
+    elif (db_drop_label == "DP_RISE"
+          or db_slope_label == "SLOPE_RISE"):
         final_label = "VOL_END_RISING"
 
-    # 라벨별 코멘트 사전
     comments = {
-        "VOL_END_STABLE_CLEAR": (
-            "문장 끝까지 볼륨이 거의 유지되어 마지막 단어까지 또렷하게 들리는 패턴입니다. "
-            "중요한 내용을 전달할 때는 장점이지만, 모든 문장이 이렇게 끝나면 다소 단조롭게 느껴질 수 있습니다."
+        "VOL_END_STABLE_CLEAR": (""
+            # "문장 끝까지 볼륨이 거의 유지되어 마지막 단어까지 또렷하게 들리는 패턴입니다. "
+            # "중요한 내용을 강조할 때는 장점이지만, 모든 문장이 이렇게 끝나면 다소 단조롭게 느껴질 수 있습니다."
         ),
-        "VOL_END_NATURAL_SOFT": (
-            "문장 끝으로 갈수록 볼륨이 살짝 줄어들어 자연스럽게 마무리되는 패턴입니다. "
-            "부담 없이 듣기 좋은 톤으로, 일반적인 진술형 문장 마감에 잘 어울립니다."
+        "VOL_END_NATURAL_SOFT": (""
+            # "문장 끝으로 갈수록 볼륨이 살짝 줄어들어 자연스럽게 마무리되는 패턴입니다. "
+            # "부담 없이 듣기 좋은 톤으로, 일반적인 진술형 문장 마감에 잘 어울립니다."
         ),
         "VOL_END_STRONG_FADE": (
             "문장 끝에서 볼륨이 크게 떨어져 마지막 단어가 흐릿하게 들릴 수 있는 패턴입니다. "
@@ -437,7 +421,8 @@ def classify_volume_ending(final_db_drop: float,
         ),
         "VOL_END_MIXED": (
             "문장 끝에서 볼륨 패턴이 일정하지 않아, 청자가 마무리의 인상을 명확하게 느끼기 어렵습니다. "
-            "감정 표현이 풍부한 상황에서는 자연스러울 수 있지만, 설명 중심 발표에서는 패턴을 조금 더 일관되게 가져가는 것이 좋습니다."
+            "감정 표현이 많은 상황에서는 자연스러울 수 있지만, 설명 중심 발표에서는 패턴을 조금 더 일관되게 "
+            "가져가는 것이 좋습니다."
         )
     }
 
@@ -454,42 +439,43 @@ def classify_pitch_ending(final_pitch_drop: str,
     # 기본값
     final_label = "PITCH_END_MIXED"
 
-    # 1) 질문형/열린 느낌
-    if (pitch_drop_label == "PITCH_STRONG_RISE" or
-            pitch_slope_label == "PITCH_SLOPE_RISE"):
+    # 1) 질문형/열린 느낌 (끝에서 올라가거나 유지)
+    if (pitch_drop_label == "PITCH_STRONG_RISE"
+        or pitch_slope_label == "PITCH_SLOPE_RISE"):
         final_label = "PITCH_END_QUESTION_LIKE"
 
-    # 2) 평탄·중립적인 마무리
-    elif (pitch_drop_label == "PITCH_RISE_OR_FLAT" and
-          pitch_slope_label == "PITCH_SLOPE_FLAT"):
-        final_label = "PITCH_END_FLAT_NEUTRAL"
+    # 2) 강한 종결감 / 단호한 마무리
+    elif (pitch_drop_label == "PITCH_STRONG_FALL"
+          and pitch_slope_label == "PITCH_SLOPE_FALL"):
+        final_label = "PITCH_END_STRONG_DECLARATIVE"
 
     # 3) 자연스러운 진술형 종결
-    elif (pitch_drop_label == "PITCH_NATURAL_FALL" and
-          pitch_slope_label in {"PITCH_SLOPE_FLAT", "PITCH_SLOPE_FALL"}):
+    elif (pitch_drop_label == "PITCH_NATURAL_FALL"
+          and pitch_slope_label in {"PITCH_SLOPE_FLAT", "PITCH_SLOPE_FALL"}):
         final_label = "PITCH_END_NATURAL_DECLARATIVE"
 
-    # 4) 강한 종결감/단호한 마무리
-    elif (pitch_drop_label == "PITCH_STRONG_FALL" and
-          pitch_slope_label == "PITCH_SLOPE_FALL"):
-        final_label = "PITCH_END_STRONG_DECLARATIVE"
+    # 4) 평탄·중립적인 마무리
+    elif (pitch_drop_label == "PITCH_RISE_OR_FLAT"
+          and pitch_slope_label == "PITCH_SLOPE_FLAT"):
+        final_label = "PITCH_END_FLAT_NEUTRAL"
 
     comments = {
         "PITCH_END_QUESTION_LIKE": (
             "문장 끝에서 피치가 올라가거나 유지되면서, 질문하거나 말을 열어두는 느낌을 줍니다. "
             "실제 질문·청유 문장에서는 자연스럽지만, 일반 진술 문장에서 반복되면 말끝이 애매하게 들릴 수 있습니다."
         ),
-        "PITCH_END_FLAT_NEUTRAL": (
-            "피치 변화가 거의 없이 담백하게 끝나는 패턴입니다. "
-            "차분하고 중립적인 인상을 주지만, 발표 전체가 이렇게만 진행되면 감정 표현이 부족하고 단조롭게 느껴질 수 있습니다."
+        "PITCH_END_FLAT_NEUTRAL": (""
+            # "피치 변화가 거의 없이 담백하게 끝나는 패턴입니다. "
+            # "차분하고 중립적인 인상을 주지만, 발표 전체가 이렇게만 진행되면 감정 표현이 부족하고 "
+            # "단조롭게 느껴질 수 있습니다."
         ),
-        "PITCH_END_NATURAL_DECLARATIVE": (
-            "피치가 자연스럽게 조금 내려가면서 진술형 문장답게 마무리되는 패턴입니다. "
-            "정보 전달과 설명에 적합한 안정적인 종결톤입니다."
+        "PITCH_END_NATURAL_DECLARATIVE": (""
+            # "피치가 자연스럽게 조금 내려가면서 진술형 문장답게 마무리되는 패턴입니다. "
+            # "정보 전달과 설명에 적합한 안정적인 종결톤입니다."
         ),
-        "PITCH_END_STRONG_DECLARATIVE": (
-            "피치가 짧은 구간에서 크게 떨어져 매우 단호하게 문장을 닫는 패턴입니다. "
-            "결론이나 핵심 메시지를 강조할 때 효과적이지만, 자주 사용하면 다소 딱딱하거나 강하게 느껴질 수 있습니다."
+        "PITCH_END_STRONG_DECLARATIVE": (""
+            # "피치가 짧은 구간에서 크게 떨어져 매우 단호하게 문장을 닫는 패턴입니다. "
+            # "결론이나 핵심 메시지를 강조할 때 효과적이지만, 자주 사용하면 다소 딱딱하거나 강하게 느껴질 수 있습니다."
         ),
         "PITCH_END_MIXED": (
             "문장 끝 피치 패턴이 일관되지 않아, 청자가 종결감이나 질문감을 명확히 인식하기 어렵습니다. "

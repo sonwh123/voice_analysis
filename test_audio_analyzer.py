@@ -8,7 +8,7 @@ import os
 audio_path = "voice1.m4a"
 
 # STT 변환 실행(.json 파일 생성)
-make_voice_to_stt(audio_path)
+# make_voice_to_stt(audio_path)
 
 # 분석 실행
 result = analyze_segments(audio_path)

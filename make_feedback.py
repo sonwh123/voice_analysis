@@ -22,6 +22,7 @@ def make_feedback(result:dict):
             "pitch_ending": {},
             "rate_level": {}
         }
+        need_feedback = False
 
         # CV 값 기반 레이블링
         # 1. Volume Stability
@@ -31,6 +32,8 @@ def make_feedback(result:dict):
             "label": label,
             "comment": comment
         }
+        if label != "NORMAL_VAR":
+            need_feedback = True 
 
         # 2. Pitch Stability
         cv_pitch = seg["pitch"]["cv"]
@@ -39,6 +42,8 @@ def make_feedback(result:dict):
             "label": label,
             "comment": comment
         }
+        if label != "NORMAL_VAR":
+            need_feedback = True 
 
         # 3. Rate Level
         rate_level = seg["wpm"]["rate_wpm"]
@@ -47,6 +52,8 @@ def make_feedback(result:dict):
             "label": label,
             "comment": comment
         }
+        if label != "TYPICAL":
+            need_feedback = True
 
         # 4. Ending Pattern - Energy
         final_db_drop = seg["final_boundary"]["final_db_drop"]
@@ -56,6 +63,8 @@ def make_feedback(result:dict):
             "label": vol_end_label,
             "comment": vol_end_comment
         }
+        if vol_end_label not in {"VOL_END_NATURAL_SOFT","VOL_END_STABLE_CLEAR"}:
+            need_feedback = True
 
         # 5. Ending Pattern - Pitch
         final_pitch_drop = seg["final_boundary"]["final_pitch_drop_semitone"]
@@ -65,18 +74,27 @@ def make_feedback(result:dict):
             "label": pitch_end_label,
             "comment": pitch_end_comment
         }
+        if pitch_end_label not in {"PITCH_END_NATURAL_DECLARATIVE",
+                                    "PITCH_END_FLAT_NEUTRAL", 
+                                    "PITCH_END_STRONG_DECLARATIVE"}:
+            need_feedback = True
 
         # print(analyzed)
         # LLM 피드백 생성
-        feedback = get_sentence_feedback_from_LLM(analyzed)
-        print()
-        print("=== LLM Feedback ===")
-        print(feedback)
+        if need_feedback:
+            feedback = get_sentence_feedback_from_LLM(analyzed)
+        else:
+            feedback = None
+        # print()
+        # print("=== LLM Feedback ===")
+        # print(feedback)
         results_feedback.append({
+            "analyzed_metrics": analyzed,
             "segment_index": index,
             "start_time": seg["start"],
             "end_time": seg["end"],
-            "feedback": feedback
+            "feedback": feedback,
+            "needs_feedback": need_feedback
         })
         index += 1
     
