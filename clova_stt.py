@@ -91,8 +91,8 @@ class ClovaSpeechClient:
         			+ '/recognizer/upload', files=files)
         return response
 
-if __name__ == '__main__':
-    res = ClovaSpeechClient().req_upload(file='./voice.m4a',
+def make_voice_to_stt(audio_file_path: str):
+    res = ClovaSpeechClient().req_upload(file=f'./{audio_file_path}',
     		completion='sync')
     
     # --- ⭐ 응답 객체(res)만을 사용한 결과 처리 및 출력 ⭐ ---
@@ -125,8 +125,8 @@ if __name__ == '__main__':
             
         
         # 3. JSON 파일 저장
-        base_name = os.path.splitext("./voice")[0]
-        json_output_file = base_name + '_segments_pure.json'
+        base_name = os.path.splitext(audio_file_path)[0]
+        json_output_file = base_name + '.json'
         
         # 순수 segments 배열만 파일에 저장
         with open(json_output_file, 'w', encoding='utf-8') as f:
