@@ -56,10 +56,10 @@ def make_feedback(result:dict):
             need_feedback = True
 
         # 4. Ending Pattern - Energy
-        final_db_drop = seg["final_boundary"]["final_db_drop"]
-        final_db_slope = seg["final_boundary"]["final_db_slope"]
-        vol_end_label, vol_end_comment = classify_volume_ending(final_db_drop, final_db_slope)
-        analyzed["ending_pattern"]= {
+        final_rms_ratio = seg["final_boundary"]["final_rms_ratio"]
+        final_rms_slope = seg["final_boundary"]["final_rms_slope"]
+        vol_end_label, vol_end_comment = classify_volume_ending(final_rms_ratio, final_rms_slope)
+        analyzed["volume_ending"]= {
             "label": vol_end_label,
             "comment": vol_end_comment
         }
@@ -67,8 +67,8 @@ def make_feedback(result:dict):
             need_feedback = True
 
         # 5. Ending Pattern - Pitch
-        final_pitch_drop = seg["final_boundary"]["final_pitch_drop_semitone"]
-        final_pitch_slope = seg["final_boundary"]["final_pitch_slope"]
+        final_pitch_drop = seg["final_boundary"]["final_pitch_semitone_drop"]
+        final_pitch_slope = seg["final_boundary"]["final_pitch_semitone_slope"]
         pitch_end_label, pitch_end_comment = classify_pitch_ending(final_pitch_drop, final_pitch_slope)
         analyzed["pitch_ending"] = {
             "label": pitch_end_label,

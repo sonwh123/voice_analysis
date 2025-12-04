@@ -127,14 +127,26 @@ def _linear_slope(x, y):
     coef = np.polyfit(x0, y, 1)
     return float(coef[0])  # 기울기 (단위: y / sec)
 
+# 1D 이동평균 스무딩
+def _smooth_1d(x, window=5):
+    x = np.asarray(x, dtype=float)
+    if x.size < 3:
+        return x
+    window = max(1, min(window, x.size))
+    if window == 1:
+        return x
+    kernel = np.ones(window) / window
+    return np.convolve(x, kernel, mode="same")
+
 # ===== 3. 문장 끝 경계 특징 계산 =====
 def compute_final_boundary_features_for_segment(
     rms: np.ndarray,
     f0_hz: np.ndarray,
+    voice_masked: np.ndarray, # 유성 구간만 True
     frame_times: np.ndarray,
-    seg_start: float,
-    seg_end: float,
+    seg_length: float,
     f0_min: float = 1e-3,
+    smooth_win: int = 5
 ):
     """
     하나의 문장(세그먼트)에 대해:
@@ -144,7 +156,6 @@ def compute_final_boundary_features_for_segment(
     """
 
     # 문장 길이
-    seg_length = seg_end - seg_start
     if seg_length <= 0.8:
         return np.nan, np.nan, np.nan , np.nan
 
@@ -153,35 +164,45 @@ def compute_final_boundary_features_for_segment(
     W_final = max(0.3, min(W_final, 0.8))   # 0.3 ~ 0.8초
     W_final = min(W_final, seg_length)         # 전체 길이보다 길지 않게
 
-    final_start = max(seg_start, seg_end - W_final)
-    final_end = seg_end
+    final_start = max(0, seg_length - W_final)
+    final_end = seg_length
     
     # baseline 구간 (중간 30% 구간)
-    base_start = seg_start + 0.3 * seg_length
-    base_end = seg_start + 0.6 * seg_length
+    base_start = 0.3 * seg_length
+    base_end = 0.6 * seg_length
 
     # base, final 구간 마스크
     base_masked = (frame_times >= base_start) & (frame_times <= base_end)
     final_masked = (frame_times >= final_start) & (frame_times <= final_end)
 
+    # 유성 구간만 필터링
+    base_masked = base_masked & voice_masked
+    final_masked = final_masked & voice_masked
+
     # ---- dB 기준 ----
 
     # baseline / final 구간 데이터 추출 + 평균 계산
-    rms_db_base = rms[base_masked]
-    rms_db_final = rms[final_masked]
-    rms_db_final_frame_times = frame_times[final_masked]
+    rms_base = rms[base_masked]
+    rms_final = rms[final_masked]
+    rms_final_frame_times = frame_times[final_masked]
 
-    mean_db_base = _safe_mean(rms_db_base)
-    mean_db_final = _safe_mean(rms_db_final)
+    mean_rms_base = _safe_mean(rms_base)
+    mean_rms_final = _safe_mean(rms_final)
 
     # dB drop 계산
-    if np.isnan(mean_db_base) or np.isnan(mean_db_final):
-        final_db_drop = np.nan
+    if np.isnan(mean_rms_base) or np.isnan(mean_rms_final) or mean_rms_base <= 0:
+        final_rms_drop = np.nan
+        final_rms_ratio = np.nan
     else:
-        final_db_drop = mean_db_base - mean_db_final  # 양수면 끝이 더 작음
+        final_rms_drop = mean_rms_base - mean_rms_final  # 양수면 끝이 더 작음
+        final_rms_ratio = mean_rms_final / mean_rms_base
 
-    # dB slope 계산
-    final_db_slope = _linear_slope(rms_db_final_frame_times, rms_db_final)
+        # dB slope 계산용 스무딩
+        if rms_final.size >= 3:
+            rms_final_sm = _smooth_1d(rms_final, window=min(smooth_win, rms_final.size))
+            final_rms_slope = _linear_slope(rms_final_frame_times, rms_final_sm)
+        else:
+            final_rms_slope = np.nan
 
 
     # ---- Pitch 기준 (semitone) ----
@@ -201,30 +222,35 @@ def compute_final_boundary_features_for_segment(
         f0_hz_final_valid = f0_hz_final[valid]
         f0_hz_final_valid_frame_times = f0_hz_final_frame_times[valid]
 
-        if f0_hz_base_valid.size < 2 or f0_hz_final_valid.size < 2:
-            return np.nan, np.nan, np.nan , np.nan
-
-        # 55 Hz 기준 semitone 변환
-        f0_base_semitone = 12.0 * np.log2(f0_hz_base_valid / 55.0)
-        f0_final_semitone = 12.0 * np.log2(f0_hz_final_valid / 55.0)
-
-        mean_f0_base = _safe_mean(f0_base_semitone)
-        mean_f0_final = _safe_mean(f0_final_semitone)
-
-        if np.isnan(mean_f0_base) or np.isnan(mean_f0_final):
+        if f0_hz_base_valid.size < 3 or f0_hz_final_valid.size < 3:
             final_pitch_drop = np.nan
+            final_pitch_slope = np.nan
         else:
-            final_pitch_drop = mean_f0_base - mean_f0_final  # 양수면 내려감
+            # 55 Hz 기준 semitone 변환
+            st_base = 12.0 * np.log2(f0_hz_base_valid / 55.0)
+            st_final = 12.0 * np.log2(f0_hz_final_valid / 55.0)
 
-        final_pitch_slope = _linear_slope(f0_hz_final_valid_frame_times, f0_final_semitone)
+            # mean_f0_base = _safe_mean(f0_base_semitone)
+            # mean_f0_final = _safe_mean(f0_final_semitone)
+            # drop은 mean 대신 median 사용 → outlier에 덜 민감
+            med_f0_base  = float(np.median(st_base))
+            med_f0_final = float(np.median(st_final))
+            final_pitch_drop = med_f0_base - med_f0_final
 
+        # if np.isnan(mean_f0_base) or np.isnan(mean_f0_final):
+        #     final_pitch_drop = np.nan
+        # else:
+        #     final_pitch_drop = mean_f0_base - mean_f0_final  # 양수면 내려감
 
-        final_db_drop = float(final_db_drop) if np.isfinite(final_db_drop) else np.nan,
-        final_db_slope = float(final_db_slope) if np.isfinite(final_db_slope) else np.nan,
-        final_pitch_drop = float(final_pitch_drop) if np.isfinite(final_pitch_drop) else np.nan,
-        final_pitch_slope = float(final_pitch_slope) if np.isfinite(final_pitch_slope) else np.nan,
+        # final_pitch_slope = _linear_slope(f0_hz_final_valid_frame_times, f0_final_semitone)
+                    # final 구간 smoothing (값 튐 방지)
+            if f0_hz_final_valid_frame_times.size >= 3:
+                st_final_sm = _smooth_1d(st_final, window=min(smooth_win, st_final.size))
+                final_pitch_slope = _linear_slope(f0_hz_final_valid_frame_times, st_final_sm)
+            else:
+                final_pitch_slope = np.nan
     
-    return final_db_drop[0], final_db_slope[0], final_pitch_drop[0], final_pitch_slope[0]
+    return final_rms_ratio, final_rms_slope, final_pitch_drop, final_pitch_slope
 
 # ===== 4. CV 기반 레이블링 함수들 =====
 ## ===== 4-1. Pitch CV =====
@@ -314,26 +340,49 @@ def classify_rate_wpm(rate_wpm: float):
 
 # ===== 5. Ending Pattern =====
 # ===== 5-1. labeling =====
-def labeling_volume_ending(db_drop: float,
-                           db_slope: float):
-    # drop 라벨
-    if not np.isfinite(db_drop):
-        drop_label = "DP_UNKNOWN"
-    elif db_drop <= -3:
-        drop_label = "DP_RISE"   
-    elif db_drop < 3:
-        drop_label = "DP_STABLE"       
-    elif db_drop < 8:
-        drop_label = "DP_SOFT_FALL"   
-    else:
-        drop_label = "DP_STRONG_FALL"   
+def labeling_volume_ending(rms_ratio: float,
+                           rms_slope: float):
+    # # drop 라벨
+    # if not np.isfinite(db_drop):
+    #     drop_label = "DP_UNKNOWN"
+    # elif db_drop <= -3:
+    #     drop_label = "DP_RISE"   
+    # elif db_drop < 3:
+    #     drop_label = "DP_STABLE"       
+    # elif db_drop < 8:
+    #     drop_label = "DP_SOFT_FALL"   
+    # else:
+    #     drop_label = "DP_STRONG_FALL"   
 
-    # slope 라벨
-    if not np.isfinite(db_slope):
+    # # slope 라벨
+    # if not np.isfinite(db_slope):
+    #     slope_label = "SLOPE_UNKNOWN"
+    # elif db_slope <= -0.5:
+    #     slope_label = "SLOPE_DECAY"
+    # elif db_slope < 0.5:
+    #     slope_label = "SLOPE_FLAT"
+    # else:
+    #     slope_label = "SLOPE_RISE"
+    # --- drop 라벨: final_mean / base_mean 비율 사용 ---
+    if not np.isfinite(rms_ratio):
+        drop_label = "DP_UNKNOWN"
+    elif rms_ratio >= 1.4:
+        # final이 base보다 훨씬 큼 → 끝에서 볼륨 올라감
+        drop_label = "DP_RISE"
+    elif rms_ratio >= 0.7:
+        drop_label = "DP_STABLE"
+    elif rms_ratio >= 0.4:
+        drop_label = "DP_SOFT_FALL"
+    else:
+        drop_label = "DP_STRONG_FALL"
+
+    # --- slope 라벨: RMS 선형값 기울기 (amp/sec) ---
+    # 여기 임계값은 RMS가 보통 0~0.1 정도라고 가정한 대략적인 값임.
+    if not np.isfinite(rms_slope):
         slope_label = "SLOPE_UNKNOWN"
-    elif db_slope <= -0.5:
+    elif rms_slope <= -0.01:
         slope_label = "SLOPE_DECAY"
-    elif db_slope < 0.5:
+    elif rms_slope < 0.01:
         slope_label = "SLOPE_FLAT"
     else:
         slope_label = "SLOPE_RISE"
@@ -373,8 +422,8 @@ def classify_volume_ending(final_db_drop: float,
 
 
     db_drop_label, db_slope_label = labeling_volume_ending(
-        db_drop=final_db_drop,
-        db_slope=final_db_slope
+        rms_ratio=final_db_drop,
+        rms_slope=final_db_slope
     )
 
     # 기본값

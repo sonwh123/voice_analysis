@@ -13,9 +13,6 @@ audio_path = "voice1.m4a"
 # 분석 실행
 result = analyze_segments(audio_path)
 
-# # 결과 출력
-# print(json.dumps(result, indent=2, ensure_ascii=False))
-
 # JSON 파일 저장
 with open("result1.json", "w", encoding="utf-8") as f:
     json.dump(result, f, ensure_ascii=False, indent=2)

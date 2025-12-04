@@ -76,13 +76,17 @@ def analyze_segments(audio_path: str):
                 f0_min=1e-3
             )
             
+            # segment 프레임 시간 (초)
+            seg_frame_idx = np.arange(rms[y_seg].shape[0])
+            seg_frame_times = (seg_frame_idx * hop_length + hop_length / 2.0) / sr
+
             # 문장 끝 경계 특징 계산
             final_db_drop, final_db_slope, final_pitch_drop, final_pitch_slope = compute_final_boundary_features_for_segment(
-                rms=rms,
-                f0_hz=f0,
-                frame_times=frame_times,
-                seg_start=seg_start,
-                seg_end=seg_end
+                rms=rms[y_seg],
+                f0_hz=f0[y_seg],
+                voice_masked=full_voice_masked[y_seg],
+                frame_times=seg_frame_times,
+                seg_length=seg_end-seg_start
             )
 
             # 말하기 속도 계산 (wpm)
@@ -112,10 +116,10 @@ def analyze_segments(audio_path: str):
                 "duration_sec": round(seg_end - seg_start, 3)
             },
             "final_boundary": {
-                "final_db_drop": round(final_db_drop, 2),
-                "final_db_slope": round(final_db_slope, 4),
-                "final_pitch_drop_semitone": round(final_pitch_drop, 2),
-                "final_pitch_slope": round(final_pitch_slope, 4)
+                "final_rms_ratio": round(final_db_drop, 2),
+                "final_rms_slope": round(final_db_slope, 4),
+                "final_pitch_semitone_drop": round(final_pitch_drop, 2),
+                "final_pitch_semitone_slope": round(final_pitch_slope, 4)
             },
             "words" : []
         }

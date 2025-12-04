@@ -74,7 +74,7 @@ def get_sentence_feedback_from_LLM(sentence_info: dict):
         [작성 지침]
 
         1. 먼저 이 문장의 말하기 방식에서 전체적인 특징을 1문장 정도로 짚어주세요.
-        2. 그 다음, volume_stability / ending_pattern / pitch_stability / pitch_ending / rate_level에 해당하는 comment들을 종합해서,
+        2. 그 다음, volume_stability / volume_ending / pitch_stability / pitch_ending / rate_level에 해당하는 comment들을 종합해서,
         이 문장에서 드러나는 말하기 습관과 아쉬운 점을 1~2문장으로 설명해주세요.
         3. comment가 없는 label의 경우에는 그 항목에 대해서는 언급하지 않아도 됩니다.
         4. 마지막으로, 연습할 때 바로 적용할 수 있는 구체적인 개선 방향을 1문장 정도로 제안해주세요.
